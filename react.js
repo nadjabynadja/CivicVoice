@@ -1,5 +1,8 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import {
+// React from CDN (window.React, window.ReactDOM)
+const { useState, useEffect, useMemo, useRef } = React;
+
+// Lucide Icons from CDN (window.lucide)
+const {
   Upload,
   Search,
   Filter,
@@ -21,7 +24,7 @@ import {
   Loader2,
   LogOut,
   UserCircle
-} from 'lucide-react';
+} = lucide;
 
 /**
  * FIREBASE CONFIGURATION & INIT
@@ -1100,4 +1103,5 @@ const App = () => {
   );
 };
 
-export default App;
+// Make App available globally for index.html to render
+window.CivicVoiceApp = App;
