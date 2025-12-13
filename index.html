@@ -8,12 +8,23 @@
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <!-- FirebaseUI CSS -->
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.css" />
+
   <!-- React & ReactDOM -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
   <!-- Babel Standalone for JSX transformation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <!-- FirebaseUI -->
+  <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
 
   <style>
     body {
@@ -47,17 +58,20 @@
 
   <script>
     // Firebase Configuration (replace with your actual config)
-    const __firebase_config = JSON.stringify({
+    const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_AUTH_DOMAIN",
       projectId: "YOUR_PROJECT_ID",
       storageBucket: "YOUR_STORAGE_BUCKET",
       messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
       appId: "YOUR_APP_ID"
-    });
+    };
 
-    // Optional: Custom auth token (if using server-side auth)
-    const __initial_auth_token = undefined;
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Initialize FirebaseUI
+    const ui = new firebaseui.auth.AuthUI(firebase.auth());
 
     // App ID for Firestore collections
     const __app_id = 'civicvoice-app';

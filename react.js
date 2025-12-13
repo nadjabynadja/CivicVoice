@@ -1,26 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { initializeApp } from "firebase/app";
-import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  setDoc, 
-  writeBatch, 
-  query, 
-  onSnapshot,
-  deleteDoc,
-  getDocs
-} from "firebase/firestore";
-import { 
-  Upload, 
-  Search, 
-  Filter, 
-  Users, 
-  Phone, 
-  CheckCircle, 
-  XCircle, 
-  BarChart3, 
+import {
+  Upload,
+  Search,
+  Filter,
+  Users,
+  Phone,
+  CheckCircle,
+  XCircle,
+  BarChart3,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -31,16 +18,17 @@ import {
   FileSpreadsheet,
   Code,
   Trash2,
-  Loader2
+  Loader2,
+  LogOut,
+  UserCircle
 } from 'lucide-react';
 
 /**
  * FIREBASE CONFIGURATION & INIT
+ * Using Firebase Compat SDK (loaded via CDN in index.html)
  */
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+const auth = firebase.auth();
+const db = firebase.firestore();
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
 /**
@@ -241,6 +229,89 @@ const wrapData = (rawData) => {
 /**
  * COMPONENTS
  */
+
+// 0. FIREBASE UI AUTHENTICATION
+const FirebaseAuthUI = ({ onSignIn }) => {
+  const authContainerRef = useRef(null);
+
+  useEffect(() => {
+    // FirebaseUI configuration
+    const uiConfig = {
+      signInSuccessUrl: window.location.href,
+      signInOptions: [
+        // Email/Password
+        firebase.auth.EmailAuthProvider.PROVIDER_ID,
+        // Google
+        firebase.auth.GoogleAuthProvider.PROVIDER_ID,
+        // Anonymous (optional - for demo/testing)
+        {
+          provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+          requireDisplayName: true
+        }
+      ],
+      callbacks: {
+        signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+          // User successfully signed in
+          if (onSignIn) {
+            onSignIn(authResult.user);
+          }
+          // Avoid redirects after sign-in.
+          return false;
+        },
+        uiShown: function() {
+          // The widget is rendered, hide the loader if present
+        }
+      },
+      // Terms of service url/callback (optional)
+      tosUrl: '#',
+      // Privacy policy url/callback (optional)
+      privacyPolicyUrl: '#'
+    };
+
+    // Start the FirebaseUI Auth widget
+    if (authContainerRef.current && window.ui) {
+      window.ui.start(authContainerRef.current, uiConfig);
+    }
+
+    // Cleanup
+    return () => {
+      if (window.ui) {
+        window.ui.reset();
+      }
+    };
+  }, [onSignIn]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-blue-800 to-indigo-900 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-8 text-white text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
+              <Users className="w-10 h-10" />
+            </div>
+            <h1 className="text-3xl font-bold mb-2">CivicVoice</h1>
+            <p className="text-blue-100 text-sm">Voter Activation System</p>
+          </div>
+
+          {/* Auth Container */}
+          <div className="p-8">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Welcome</h2>
+            <p className="text-gray-600 text-center mb-6">Sign in to manage your voter database</p>
+            <div ref={authContainerRef} id="firebaseui-auth-container"></div>
+          </div>
+
+          {/* Footer */}
+          <div className="bg-gray-50 px-8 py-4 text-center border-t border-gray-200">
+            <p className="text-xs text-gray-500">
+              Secure authentication powered by Firebase
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // 1. DATA UPLOAD & MAPPING
 const DataUpload = ({ onStartUpload, isUploading, uploadProgress, user }) => {
@@ -550,31 +621,27 @@ const App = () => {
 
   // Auth Init
   useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, setUser);
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+    });
     return () => unsubscribe();
   }, []);
 
   // Data Sync (Firestore)
   useEffect(() => {
     if (!user) return;
-    const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'voters'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const voters = snapshot.docs.map(d => d.data());
-      setData(voters);
-      if (voters.length > 0 && view === 'upload') {
-        setView('dashboard'); // Auto-switch if data exists
-      }
-    }, (error) => {
-      console.error("Firestore Error:", error);
-    });
+    const unsubscribe = db.collection('artifacts').doc(appId)
+      .collection('users').doc(user.uid)
+      .collection('voters')
+      .onSnapshot((snapshot) => {
+        const voters = snapshot.docs.map(d => d.data());
+        setData(voters);
+        if (voters.length > 0 && view === 'upload') {
+          setView('dashboard'); // Auto-switch if data exists
+        }
+      }, (error) => {
+        console.error("Firestore Error:", error);
+      });
     return () => unsubscribe();
   }, [user, view]);
 
@@ -594,11 +661,13 @@ const App = () => {
     try {
       // First, clear existing? Or append? Let's assume append/overwrite by ID.
       // For a "clean" slate, user should delete manually, but let's just add for now.
-      
+
       for (const chunk of chunks) {
-        const batch = writeBatch(db);
+        const batch = db.batch();
         chunk.forEach(row => {
-          const ref = doc(db, 'artifacts', appId, 'users', user.uid, 'voters', row._id);
+          const ref = db.collection('artifacts').doc(appId)
+            .collection('users').doc(user.uid)
+            .collection('voters').doc(row._id);
           batch.set(ref, row);
         });
         await batch.commit();
@@ -617,11 +686,12 @@ const App = () => {
   const clearDatabase = async () => {
     if (!confirm("Are you sure? This will delete all voter data permanently.")) return;
     if (!user) return;
-    
+
     // Getting all docs and deleting is expensive, but necessary here
-    const q = query(collection(db, 'artifacts', appId, 'users', user.uid, 'voters'));
-    const snapshot = await getDocs(q);
-    const batch = writeBatch(db);
+    const snapshot = await db.collection('artifacts').doc(appId)
+      .collection('users').doc(user.uid)
+      .collection('voters').get();
+    const batch = db.batch();
     snapshot.docs.forEach(d => batch.delete(d.ref));
     await batch.commit();
     setView('upload');
@@ -661,13 +731,15 @@ const App = () => {
   // Contact Logic (Write to Firestore)
   const handleBulkContact = async (type) => {
     if (!user) return;
-    const batch = writeBatch(db);
-    
+    const batch = db.batch();
+
     // Find the actual rows to update from local state for reference
     const timestamp = new Date().toISOString();
-    
+
     selectedIds.forEach(id => {
-      const voterRef = doc(db, 'artifacts', appId, 'users', user.uid, 'voters', id);
+      const voterRef = db.collection('artifacts').doc(appId)
+        .collection('users').doc(user.uid)
+        .collection('voters').doc(id);
       const currentVoter = data.find(d => d._id === id);
       if (currentVoter) {
         const newHistory = [...(currentVoter._contactHistory || []), { type, date: timestamp }];
@@ -676,7 +748,7 @@ const App = () => {
     });
 
     await batch.commit();
-    setSelectedIds([]); 
+    setSelectedIds([]);
   };
 
   const exportList = () => {
@@ -700,8 +772,15 @@ const App = () => {
     }
   };
 
+  // Sign Out Handler
+  const handleSignOut = async () => {
+    if (confirm("Are you sure you want to sign out?")) {
+      await auth.signOut();
+    }
+  };
+
   // View Routing
-  if (!user) return <div className="h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-blue-600"/></div>;
+  if (!user) return <FirebaseAuthUI onSignIn={(user) => setUser(user)} />;
 
   if (view === 'upload' && data.length === 0) {
     return (
@@ -712,7 +791,16 @@ const App = () => {
               <Users className="w-6 h-6" />
               <h1 className="text-xl font-bold tracking-tight">CivicVoice <span className="font-normal opacity-70">| Data Manager</span></h1>
             </div>
-            <div className="text-xs opacity-50 font-mono">{user.uid.slice(0,6)}...</div>
+            <div className="flex items-center gap-3">
+              <div className="text-xs opacity-70">{user.email || user.displayName || 'User'}</div>
+              <button
+                onClick={handleSignOut}
+                className="p-2 hover:bg-blue-800 rounded text-blue-200"
+                title="Sign Out"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </header>
         <DataUpload 
@@ -769,6 +857,20 @@ const App = () => {
              <button onClick={clearDatabase} className="p-2 hover:bg-red-800 rounded text-red-200" title="Delete All Data">
                <Trash2 className="w-5 h-5" />
              </button>
+             <div className="h-8 w-px bg-blue-700"></div>
+             <div className="flex items-center gap-2">
+               <div className="hidden md:block text-right text-xs">
+                 <div className="opacity-80">Signed in as</div>
+                 <div className="font-semibold truncate max-w-[120px]">{user.email || user.displayName || 'User'}</div>
+               </div>
+               <button
+                 onClick={handleSignOut}
+                 className="p-2 hover:bg-blue-800 rounded text-blue-200 flex items-center gap-1"
+                 title="Sign Out"
+               >
+                 <LogOut className="w-5 h-5" />
+               </button>
+             </div>
           </div>
         </div>
       </header>
