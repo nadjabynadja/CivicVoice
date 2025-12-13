@@ -26,10 +26,11 @@ import {
 /**
  * FIREBASE CONFIGURATION & INIT
  * Using Firebase Compat SDK (loaded via CDN in index.html)
+ * Initialized in firebase-config.js
  */
-const auth = firebase.auth();
-const db = firebase.firestore();
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+const auth = window.auth;
+const db = window.db;
+const appId = window.__app_id || 'default-app-id';
 
 /**
  * UTILITIES

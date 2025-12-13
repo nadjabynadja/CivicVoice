@@ -26,6 +26,9 @@
   <!-- FirebaseUI -->
   <script src="https://www.gstatic.com/firebasejs/ui/6.1.0/firebase-ui-auth.js"></script>
 
+  <!-- Firebase Configuration -->
+  <script src="firebase-config.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -56,25 +59,10 @@
 <body>
   <div id="root"></div>
 
+  <!-- Firebase is initialized in firebase-config.js -->
   <script>
-    // Firebase Configuration (replace with your actual config)
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_AUTH_DOMAIN",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_STORAGE_BUCKET",
-      messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-
-    // Initialize FirebaseUI
-    const ui = new firebaseui.auth.AuthUI(firebase.auth());
-
-    // App ID for Firestore collections
-    const __app_id = 'civicvoice-app';
+    // Initialize FirebaseUI (after Firebase is loaded)
+    const ui = new firebaseui.auth.AuthUI(window.auth);
   </script>
 
   <!-- Your React Application -->
