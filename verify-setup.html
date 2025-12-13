@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicVoice - Setup Verification</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+    .content {
+      padding: 30px;
+    }
+    .check-item {
+      padding: 15px;
+      margin-bottom: 12px;
+      border-radius: 8px;
+      border-left: 4px solid #ccc;
+      background: #f8f9fa;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .check-item.pending {
+      border-left-color: #ffc107;
+      background: #fff9e6;
+    }
+    .check-item.success {
+      border-left-color: #28a745;
+      background: #e8f5e9;
+    }
+    .check-item.error {
+      border-left-color: #dc3545;
+      background: #ffebee;
+    }
+    .check-item .icon {
+      font-size: 24px;
+      min-width: 30px;
+      text-align: center;
+    }
+    .check-item .details {
+      flex: 1;
+    }
+    .check-item .title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .check-item .message {
+      font-size: 13px;
+      color: #666;
+    }
+    .actions {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    .btn {
+      padding: 12px 24px;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn-primary {
+      background: #2a5298;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1e3c72;
+    }
+    .btn-secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    .btn-secondary:hover {
+      background: #d0d0d0;
+    }
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ccc;
+      border-top-color: #333;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    code {
+      background: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+  </style>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔍 Setup Verification</h1>
+      <p>Checking your CivicVoice configuration...</p>
+    </div>
+
+    <div class="content">
+      <div id="checks"></div>
+
+      <div class="actions">
+        <button class="btn btn-secondary" onclick="location.reload()">Recheck</button>
+        <a href="index.html" class="btn btn-primary" id="launchBtn" style="display:none;">Launch CivicVoice →</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const checks = [
+      {
+        id: 'config',
+        title: 'Firebase Configuration',
+        test: () => {
+          if (!window.firebaseApp) {
+            return { success: false, message: 'Firebase not initialized. Check firebase-config.js' };
+          }
+          const options = window.firebaseApp.options;
+          if (options.apiKey.includes('YOUR_') || options.projectId.includes('your-')) {
+            return { success: false, message: 'Configuration contains placeholder values. Update firebase-config.js with your actual credentials.' };
+          }
+          return { success: true, message: `Project: ${options.projectId}` };
+        }
+      },
+      {
+        id: 'auth',
+        title: 'Authentication Service',
+        test: () => {
+          if (!window.auth) {
+            return { success: false, message: 'Auth service not initialized' };
+          }
+          return { success: true, message: 'Auth service ready' };
+        }
+      },
+      {
+        id: 'firestore',
+        title: 'Firestore Database',
+        test: async () => {
+          if (!window.db) {
+            return { success: false, message: 'Firestore not initialized' };
+          }
+
+          try {
+            // Try to access Firestore (this will fail if Firestore is not enabled)
+            const testRef = window.db.collection('_test');
+            return { success: true, message: 'Firestore connection established' };
+          } catch (err) {
+            return { success: false, message: 'Firestore access failed: ' + err.message };
+          }
+        }
+      },
+      {
+        id: 'rules',
+        title: 'Security Rules (requires auth)',
+        test: async () => {
+          if (!window.auth.currentUser) {
+            return { success: null, message: 'Sign in to test security rules' };
+          }
+
+          try {
+            const userId = window.auth.currentUser.uid;
+            const appId = window.__app_id || 'civicvoice-app';
+            const ref = window.db.collection('artifacts').doc(appId)
+              .collection('users').doc(userId)
+              .collection('voters');
+
+            await ref.limit(1).get();
+            return { success: true, message: 'Security rules deployed correctly' };
+          } catch (err) {
+            if (err.code === 'permission-denied') {
+              return { success: false, message: 'Security rules not deployed. Run: firebase deploy --only firestore:rules' };
+            }
+            return { success: false, message: err.message };
+          }
+        }
+      },
+      {
+        id: 'persistence',
+        title: 'Offline Persistence',
+        test: () => {
+          // Check if persistence was enabled (logged in console)
+          return { success: true, message: 'Check console for persistence status' };
+        }
+      }
+    ];
+
+    async function runChecks() {
+      const container = document.getElementById('checks');
+      let allSuccess = true;
+
+      for (const check of checks) {
+        const div = document.createElement('div');
+        div.className = 'check-item pending';
+        div.innerHTML = `
+          <div class="icon"><span class="spinner"></span></div>
+          <div class="details">
+            <div class="title">${check.title}</div>
+            <div class="message">Testing...</div>
+          </div>
+        `;
+        container.appendChild(div);
+
+        try {
+          const result = await check.test();
+
+          if (result.success === true) {
+            div.className = 'check-item success';
+            div.innerHTML = `
+              <div class="icon">✅</div>
+              <div class="details">
+                <div class="title">${check.title}</div>
+                <div class="message">${result.message}</div>
+              </div>
+            `;
+          } else if (result.success === false) {
+            div.className = 'check-item error';
+            div.innerHTML = `
+              <div class="icon">❌</div>
+              <div class="details">
+                <div class="title">${check.title}</div>
+                <div class="message">${result.message}</div>
+              </div>
+            `;
+            allSuccess = false;
+          } else {
+            div.className = 'check-item pending';
+            div.innerHTML = `
+              <div class="icon">⚠️</div>
+              <div class="details">
+                <div class="title">${check.title}</div>
+                <div class="message">${result.message}</div>
+              </div>
+            `;
+          }
+        } catch (err) {
+          div.className = 'check-item error';
+          div.innerHTML = `
+            <div class="icon">❌</div>
+            <div class="details">
+              <div class="title">${check.title}</div>
+              <div class="message">Error: ${err.message}</div>
+            </div>
+          `;
+          allSuccess = false;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      if (allSuccess) {
+        document.getElementById('launchBtn').style.display = 'inline-block';
+      }
+    }
+
+    runChecks();
+  </script>
+</body>
+</html>

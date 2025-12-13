@@ -1,0 +1,43 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "voters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "_sys_party",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "_sys_city",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "voters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "_sys_lastName",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "_sys_firstName",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "voters",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "_contactHistory",
+          "arrayConfig": "CONTAINS"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

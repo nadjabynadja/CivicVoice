@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if user owns the data
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Artifacts collection - contains user-specific data
+    match /artifacts/{appId} {
+      // Users collection within each app
+      match /users/{userId} {
+        // Allow users to read/write their own data
+        allow read, write: if isOwner(userId);
+
+        // Voters subcollection - user's voter database
+        match /voters/{voterId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        // Settings subcollection - user preferences
+        match /settings/{settingId} {
+          allow read, write: if isOwner(userId);
+        }
+
+        // Campaigns subcollection - user's campaigns
+        match /campaigns/{campaignId} {
+          allow read, write: if isOwner(userId);
+        }
+      }
+    }
+
+    // Deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

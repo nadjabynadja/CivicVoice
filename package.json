@@ -1,0 +1,39 @@
+{
+  "name": "civicvoice",
+  "version": "1.0.0",
+  "description": "Voter Activation System - Cloud-based voter database management",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server -p 8000 -o",
+    "serve": "python3 -m http.server 8000",
+    "firebase:login": "firebase login",
+    "firebase:init": "firebase init",
+    "firebase:rules": "firebase deploy --only firestore:rules",
+    "firebase:indexes": "firebase deploy --only firestore:indexes",
+    "firebase:deploy": "firebase deploy",
+    "firebase:hosting": "firebase deploy --only hosting",
+    "firebase:serve": "firebase serve",
+    "setup": "npm run firebase:login && npm run firebase:rules && npm run firebase:indexes",
+    "deploy": "npm run firebase:deploy"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nadjabynadja/CivicVoice"
+  },
+  "keywords": [
+    "voter",
+    "database",
+    "firebase",
+    "react",
+    "campaign",
+    "canvassing"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "firebase-tools": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
