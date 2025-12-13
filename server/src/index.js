@@ -148,7 +148,7 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Start server
+// Start server (only when not imported as a module)
 async function startServer() {
   console.log('━'.repeat(60));
   console.log('🗳️  CivicVoice API Server');
@@ -169,9 +169,12 @@ async function startServer() {
   });
 }
 
-startServer().catch(err => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// Only start server if this file is run directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+  startServer().catch(err => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
 
 export default app;
