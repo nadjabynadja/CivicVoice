@@ -65,96 +65,139 @@ const useScript = (url) => {
 };
 
 // Robust Parser Factory
-const parseFile = async (file, textContent) => {
-  const ext = file.name.split('.').pop().toLowerCase();
-  
-  if (ext === 'xlsx' || ext === 'xls') {
-    if (!window.XLSX) throw new Error("Excel parser not ready. Please wait a moment.");
-    const workbook = window.XLSX.read(textContent, { type: 'binary' });
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const jsonData = window.XLSX.utils.sheet_to_json(sheet, { header: 1 });
-    if (jsonData.length < 2) return { headers: [], data: [] };
-    const headers = jsonData[0];
-    const data = jsonData.slice(1).map(row => {
-      const obj = {};
-      headers.forEach((h, i) => obj[h] = row[i] || '');
-      return obj;
-    });
-    return { headers, data: wrapData(data) };
+
+/**
+ * Splits a CSV or TSV line, handling quoted values properly
+ * @param {string} line - The line to split
+ * @param {string} delimiter - The delimiter to use (',' or '\t')
+ * @returns {string[]} - Array of parsed values
+ */
+const parseCsvLine = (line, delimiter) => {
+  // Simple split for TSV (no quote handling needed)
+  if (delimiter === '\t') {
+    return line.split('\t');
   }
 
-  if (ext === 'sql') {
-    // Basic SQL Dump Parser (INSERT INTO ... VALUES (...))
-    // This is a heuristic parser and may not cover complex SQL dumps
-    const lines = textContent.split('\n');
-    const headers = []; // SQL doesn't always have headers in the same way, we might need to infer or prompt
-    const data = [];
-    
-    // Try to find INSERT statements
-    const insertRegex = /INSERT INTO `?(\w+)`? \((.*?)\) VALUES/i;
-    const valuesRegex = /\((.*?)\)/g;
-    
-    let foundHeaders = false;
+  // Complex parsing for CSV to handle quoted values with embedded commas
+  const result = [];
+  let current = '';
+  let inQuotes = false;
 
-    lines.forEach(line => {
-      if (!foundHeaders) {
-        const match = line.match(insertRegex);
-        if (match) {
-          match[2].split(',').forEach(h => headers.push(h.trim().replace(/[`'"]/g, '')));
-          foundHeaders = true;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  result.push(current.trim());
+  return result.map(val => val.replace(/^"|"$/g, ''));
+};
+
+/**
+ * Parses Excel files (XLSX/XLS)
+ * @param {File} file - The file being parsed
+ * @param {string} textContent - Binary content of the file
+ * @returns {Object} - Parsed headers and data
+ */
+const parseExcelFile = (file, textContent) => {
+  if (!window.XLSX) {
+    throw new Error("Excel parser not ready. Please wait a moment.");
+  }
+
+  const workbook = window.XLSX.read(textContent, { type: 'binary' });
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const jsonData = window.XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+  if (jsonData.length < 2) {
+    return { headers: [], data: [] };
+  }
+
+  const headers = jsonData[0];
+  const data = jsonData.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => {
+      obj[h] = row[i] || '';
+    });
+    return obj;
+  });
+
+  return { headers, data: wrapData(data) };
+};
+
+/**
+ * Parses SQL dump files (INSERT INTO ... VALUES format)
+ * Uses heuristic parsing and may not cover all SQL dump formats
+ * @param {string} textContent - Content of the SQL file
+ * @returns {Object} - Parsed headers and data
+ */
+const parseSqlFile = (textContent) => {
+  const lines = textContent.split('\n');
+  const headers = [];
+  const data = [];
+
+  // Regex patterns to match INSERT statements and VALUES
+  const insertRegex = /INSERT INTO `?(\w+)`? \((.*?)\) VALUES/i;
+  const valuesRegex = /\((.*?)\)/g;
+
+  let foundHeaders = false;
+
+  lines.forEach(line => {
+    // Extract column names from the first INSERT statement
+    if (!foundHeaders) {
+      const match = line.match(insertRegex);
+      if (match) {
+        match[2].split(',').forEach(h => {
+          headers.push(h.trim().replace(/[`'"]/g, ''));
+        });
+        foundHeaders = true;
+      }
+    }
+
+    // Extract values from lines containing VALUES or starting with (
+    if (line.trim().startsWith('(') || line.includes('VALUES')) {
+      let match;
+      while ((match = valuesRegex.exec(line)) !== null) {
+        const vals = match[1].split(',').map(v => v.trim().replace(/^'|'$/g, ''));
+        if (vals.length === headers.length) {
+          const row = {};
+          headers.forEach((h, i) => {
+            row[h] = vals[i];
+          });
+          data.push(row);
         }
       }
-      
-      // Very naive value parser - assumes standard SQL dump format
-      if (line.trim().startsWith('(') || line.includes('VALUES')) {
-         let match;
-         while ((match = valuesRegex.exec(line)) !== null) {
-            const vals = match[1].split(',').map(v => v.trim().replace(/^'|'$/g, ''));
-            if (vals.length === headers.length) {
-              const row = {};
-              headers.forEach((h, i) => row[h] = vals[i]);
-              data.push(row);
-            }
-         }
-      }
-    });
-    return { headers, data: wrapData(data) };
+    }
+  });
+
+  return { headers, data: wrapData(data) };
+};
+
+/**
+ * Parses CSV/TSV text files
+ * @param {string} textContent - Content of the file
+ * @returns {Object} - Parsed headers and data
+ */
+const parseCsvTsvFile = (textContent) => {
+  const lines = textContent.split('\n').filter(line => line.trim() !== '');
+
+  if (lines.length < 2) {
+    return { headers: [], data: [] };
   }
 
-  // Default: Text/CSV/TSV
-  const lines = textContent.split('\n').filter(line => line.trim() !== '');
-  if (lines.length < 2) return { headers: [], data: [] };
-
-  // Detect Delimiter
+  // Auto-detect delimiter (tab or comma)
   const firstLine = lines[0];
   const delimiter = firstLine.includes('\t') ? '\t' : ',';
 
-  const splitLine = (line) => {
-    // Simple split for TSV, complex regex for CSV to handle quotes
-    if (delimiter === '\t') return line.split('\t');
-    
-    const result = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const char = line[i];
-      if (char === '"') {
-        inQuotes = !inQuotes;
-      } else if (char === ',' && !inQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result.map(val => val.replace(/^"|"$/g, ''));
-  };
-
-  const headers = splitLine(lines[0]);
+  const headers = parseCsvLine(lines[0], delimiter);
   const data = lines.slice(1).map(line => {
-    const values = splitLine(line);
+    const values = parseCsvLine(line, delimiter);
     const row = {};
     headers.forEach((header, index) => {
       row[header] = values[index] || '';
@@ -163,6 +206,27 @@ const parseFile = async (file, textContent) => {
   });
 
   return { headers, data: wrapData(data) };
+};
+
+/**
+ * Main file parser - routes to appropriate parser based on file extension
+ * @param {File} file - The file object to parse
+ * @param {string} textContent - Content of the file
+ * @returns {Promise<Object>} - Parsed headers and data
+ */
+const parseFile = async (file, textContent) => {
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    return parseExcelFile(file, textContent);
+  }
+
+  if (ext === 'sql') {
+    return parseSqlFile(textContent);
+  }
+
+  // Default: CSV/TSV
+  return parseCsvTsvFile(textContent);
 };
 
 // Helper to add system fields to raw data
