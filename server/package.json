@@ -1,0 +1,40 @@
+{
+  "name": "civicvoice-server",
+  "version": "1.0.0",
+  "description": "CivicVoice backend for voter data management",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "db:migrate": "node src/db/migrate.js",
+    "db:seed": "node src/db/seed.js",
+    "ingest": "node src/ingestion/ingest-ncsbe.js",
+    "ingest:history": "node src/ingestion/ingest-history.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "pg": "^8.11.3",
+    "pg-promise": "^11.5.4",
+    "dotenv": "^16.3.1",
+    "multer": "^1.4.5-lts.1",
+    "unzipper": "^0.10.14",
+    "csv-parser": "^3.0.0",
+    "fast-csv": "^4.3.6",
+    "pdfkit": "^0.14.0",
+    "uuid": "^9.0.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "express-rate-limit": "^7.1.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
