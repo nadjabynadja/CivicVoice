@@ -9,15 +9,6 @@ server/node_modules
 .env.development
 server/.env
 
-# Firebase files (not needed for Vercel deployment)
-.firebaserc
-firebase.json
-firestore.rules
-firestore.indexes.json
-firebase-config.js
-firebase-config.example.js
-FIREBASE_SETUP.md
-
 # Git
 .git
 .gitignore
