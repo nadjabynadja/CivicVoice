@@ -37,7 +37,7 @@
     "node": ">=16.0.0"
   }
   "scripts": {
-    "build": "vite build",  // or webpack, or whatever you're using
+    "build": "vite build",  
     "dev": "vite dev"
   }
 }
