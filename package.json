@@ -4,9 +4,6 @@
   "description": "Voter Activation System - Cloud-based voter database management",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
     "firebase:login": "firebase login",
     "firebase:init": "firebase init",
     "firebase:rules": "firebase deploy --only firestore:rules",
@@ -34,8 +31,7 @@
     "firebase": "^10.13.0"
   },
   "devDependencies": {
-    "firebase-tools": "^13.0.0",
-    "vite": "^5.4.0"
+    "firebase-tools": "^13.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
