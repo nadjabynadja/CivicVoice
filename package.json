@@ -36,4 +36,10 @@
   "engines": {
     "node": ">=16.0.0"
   }
+  "scripts": {
+    "build": "vite build",  // or webpack, or whatever you're using
+    "dev": "vite dev"
+  }
+}
+  }
 }
