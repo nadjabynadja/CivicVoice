@@ -2,10 +2,11 @@
   "name": "civicvoice",
   "version": "1.0.0",
   "description": "Voter Activation System - Cloud-based voter database management",
-  "main": "index.html",
+  "type": "module",
   "scripts": {
-    "start": "npx http-server -p 8000 -o",
-    "serve": "python3 -m http.server 8000",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "firebase:login": "firebase login",
     "firebase:init": "firebase init",
     "firebase:rules": "firebase deploy --only firestore:rules",
@@ -13,8 +14,7 @@
     "firebase:deploy": "firebase deploy",
     "firebase:hosting": "firebase deploy --only hosting",
     "firebase:serve": "firebase serve",
-    "setup": "npm run firebase:login && npm run firebase:rules && npm run firebase:indexes",
-    "deploy": "npm run firebase:deploy"
+    "setup": "npm run firebase:login && npm run firebase:rules && npm run firebase:indexes"
   },
   "repository": {
     "type": "git",
@@ -30,10 +30,14 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "firebase": "^10.13.0"
+  },
   "devDependencies": {
-    "firebase-tools": "^13.0.0"
+    "firebase-tools": "^13.0.0",
+    "vite": "^5.4.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   }
 }

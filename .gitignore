@@ -1,38 +1,33 @@
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-firebase-config.js
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
-# Environment files (if you switch to .env later)
+# Build output
+dist/
+build/
+
+# Environment variables
 .env
 .env.local
 .env.production
 
-# Node modules (if you add npm later)
-node_modules/
-
-# Build files (if you add a build step later)
-dist/
-build/
-
-# Editor files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
 
-# Local development
-.cache/
+# Vite
+*.local
